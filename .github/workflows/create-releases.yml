@@ -1,6 +1,9 @@
 name: Create Firmware & Editor Releases
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
