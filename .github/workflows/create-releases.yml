@@ -1,0 +1,171 @@
+name: Create Firmware & Editor Releases
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+
+          # ── HELPER: slugify a string to a URL-safe release tag ────
+          slugify() {
+            echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -d '()' | tr -s '-'
+          }
+
+          # ── HELPER: create or upload to existing release ──────────
+          upload_to_release() {
+            local tag="$1"
+            local title="$2"
+            local notes="$3"
+            shift 3
+            local files=("$@")
+
+            gh release upload "$tag" "${files[@]}" \
+              --repo "${{ github.repository }}" \
+              --clobber 2>/dev/null || \
+            gh release create "$tag" "${files[@]}" \
+              --title "$title" \
+              --repo "${{ github.repository }}" \
+              --notes "$notes" \
+              2>&1 || echo "⚠ Skipped $tag"
+          }
+
+          # ── ROOT LEVEL DRIVERS ────────────────────────────────────
+          echo "── Root drivers ──"
+          mapfile -d '' rootfiles < <(find . -maxdepth 1 -type f \( -name "*.zip" -o -name "*.exe" \) -print0)
+          if [ ${#rootfiles[@]} -gt 0 ]; then
+            gh release create "drivers-and-tools" "${rootfiles[@]}" \
+              --title "Drivers & Tools" \
+              --repo "${{ github.repository }}" \
+              --notes "USB drivers and general tools" \
+              2>&1 || echo "⚠ Skipped drivers-and-tools"
+          fi
+
+          # ── FIRMWARES ─────────────────────────────────────────────
+          echo "── Firmwares ──"
+          declare -A FIRMWARE_MAP=(
+            ["solis-ventus-firmwares"]="solis-ventus"
+            ["duophony-firmwares"]="duophony"
+            ["enieqma-firmwares"]="enieqma"
+            ["cabzeus-firmwares"]="cabzeus"
+            ["synesthesia-firmwares"]="synesthesia"
+            ["specular-tempus-firmwares"]="specular-tempus"
+          )
+
+          for folder in "${!FIRMWARE_MAP[@]}"; do
+            product="${FIRMWARE_MAP[$folder]}"
+            echo "  ── $product ──"
+
+            # Versioned .fdt files at top level only
+            while IFS= read -r -d '' file; do
+              filename=$(basename "$file")
+              slug=$(slugify "${filename%.fdt}")
+              tag="${product}-${slug}"
+
+              echo "  → $tag"
+              gh release create "$tag" "$file" \
+                --title "$filename" \
+                --repo "${{ github.repository }}" \
+                --notes "Firmware release for $product" \
+                2>&1 || echo "  ⚠ Skipped $tag"
+
+            done < <(find "$folder" -maxdepth 1 -name "*.fdt" -print0)
+
+            # newest/ — stable floating tag, delete-and-replace each run
+            while IFS= read -r -d '' file; do
+              tag="${product}-newest"
+              echo "  → $tag (floating)"
+              gh release delete "$tag" \
+                --repo "${{ github.repository }}" --yes 2>/dev/null || true
+              gh release create "$tag" "$file" \
+                --title "${product} - Latest Firmware" \
+                --repo "${{ github.repository }}" \
+                --notes "Always points to the latest firmware for $product" \
+                2>&1 || echo "  ⚠ Skipped $tag"
+
+            done < <(find "$folder/newest" -maxdepth 1 -name "*.fdt" -print0 2>/dev/null)
+
+          done
+
+          # Synesthesia patch bundle (zips, not fdts — needs its own release)
+          echo "  → synesthesia-patch-bundle"
+          mapfile -d '' bundlefiles < <(find "synesthesia-firmwares/firmware-software-patch-bundle" -maxdepth 1 -type f -print0 2>/dev/null)
+          if [ ${#bundlefiles[@]} -gt 0 ]; then
+            gh release create "synesthesia-patch-bundle" "${bundlefiles[@]}" \
+              --title "Synesthesia Firmware + Software Patch Bundle" \
+              --repo "${{ github.repository }}" \
+              --notes "Combined firmware and software patch package for Synesthesia" \
+              2>&1 || echo "  ⚠ Skipped synesthesia-patch-bundle"
+          fi
+
+          # ── EDITORS ───────────────────────────────────────────────
+          echo "── Editors ──"
+          declare -A EDITOR_MAP=(
+            ["editors/cabslab"]="cabslab"
+            ["editors/duophony"]="duophony-dfu"
+            ["editors/enieqlab"]="enieqlab"
+            ["editors/speclab"]="speclab"
+            ["editors/sv-studio"]="sv-studio"
+            ["editors/symmlab"]="symmlab"
+          )
+
+          for folder in "${!EDITOR_MAP[@]}"; do
+            product="${EDITOR_MAP[$folder]}"
+            echo "  ── $product ──"
+
+            # Version subfolders (exclude patch/ which is a category not a version)
+            while IFS= read -r -d '' versiondir; do
+              version=$(basename "$versiondir")
+
+              # Skip non-version folders
+              case "$version" in
+                patch|patches|drivers|extras) continue ;;
+              esac
+
+              slug=$(slugify "$version")
+              tag="${product}-${slug}"
+
+              mapfile -d '' files < <(find "$versiondir" -maxdepth 1 -type f -print0)
+              [ ${#files[@]} -eq 0 ] && echo "  ⚠ Empty: $versiondir" && continue
+
+              echo "  → $tag (${#files[@]} files)"
+              gh release create "$tag" "${files[@]}" \
+                --title "$version" \
+                --repo "${{ github.repository }}" \
+                --notes "Editor release: $version" \
+                2>&1 || echo "  ⚠ Skipped $tag"
+
+            done < <(find "$folder" -mindepth 1 -maxdepth 1 -type d -print0)
+
+            # Loose files directly in editor root (sv-studio 1.0.0, duophony DFU loose files, symmlab READMEs)
+            mapfile -d '' loosefiles < <(find "$folder" -maxdepth 1 -type f -print0)
+            if [ ${#loosefiles[@]} -gt 0 ]; then
+              tag="${product}-extras"
+              echo "  → $tag (${#loosefiles[@]} loose files)"
+              upload_to_release "$tag" "${product} - Extra Files" "Drivers, READMEs, and miscellaneous files for $product" "${loosefiles[@]}"
+            fi
+
+            # patch/ subfolder (symmlab) — treat as its own dated release
+            if [ -d "$folder/patch" ]; then
+              mapfile -d '' patchfiles < <(find "$folder/patch" -maxdepth 1 -type f -print0)
+              if [ ${#patchfiles[@]} -gt 0 ]; then
+                tag="${product}-patch"
+                echo "  → $tag"
+                gh release create "$tag" "${patchfiles[@]}" \
+                  --title "${product} - Patch" \
+                  --repo "${{ github.repository }}" \
+                  --notes "Patch files for $product" \
+                  2>&1 || echo "  ⚠ Skipped $tag"
+              fi
+            fi
+
+          done
+
+          echo "✅ Done"
