@@ -92,8 +92,11 @@ jobs:
               # Collect manuals for this product
               mapfile -d '' manuals < <(find "manuals/${product}" -maxdepth 1 -type f -name "*.pdf" -print0 2>/dev/null)
 
-              # Build file list: firmware + manuals combined
-              allfiles=("$file" "${manuals[@]}")
+              # Collect firmware update history PDF for this product
+              mapfile -d '' history < <(find "${folder}/firmware-update-history" -maxdepth 1 -type f -name "*.pdf" -print0 2>/dev/null)
+
+              # Build file list: firmware + manuals + history combined
+              allfiles=("$file" "${manuals[@]}" "${history[@]}")
 
               gh release create "$tag" "${allfiles[@]}" \
                 --title "${product} - Latest Firmware" \
