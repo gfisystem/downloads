@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'solis-ventus-firmwares/**'
+      - 'duophony-firmwares/**'
+      - 'enieqma-firmwares/**'
+      - 'cabzeus-firmwares/**'
+      - 'synesthesia-firmwares/**'
+      - 'specular-tempus-firmwares/**'
+      - 'editors/**'
+      - 'manuals/**'
   workflow_dispatch:
 
 jobs:

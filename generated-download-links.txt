@@ -125,10 +125,12 @@ https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/sol
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.MIDI.Implementation.Chart.-.rev.F.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.I.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.J.pdf
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/SolisVentus.Firmware.Update.history.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/sv-newest-firmware.fdt
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/SV.Firmware.v1.8.0.Release.Note.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-newest/enieqma-midi-implementation.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-newest/enieqma-user-manual.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-newest/Enieqma.Firmware.Update.history.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-newest/newest-firmware.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_2/Enieqma_firmware_v1_2_2.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_1/Enieqma_firmware_v1_2_1.fdt
