@@ -82,12 +82,20 @@ jobs:
             done < <(find "$folder" -maxdepth 1 -name "*.fdt" -print0)
 
             # newest/ — stable floating tag, delete-and-replace each run
+            # includes all manuals for this product if they exist
             while IFS= read -r -d '' file; do
               tag="${product}-newest"
               echo "  → $tag (floating)"
               gh release delete "$tag" \
                 --repo "${{ github.repository }}" --yes 2>/dev/null || true
-              gh release create "$tag" "$file" \
+
+              # Collect manuals for this product
+              mapfile -d '' manuals < <(find "manuals/${product}" -maxdepth 1 -type f -name "*.pdf" -print0 2>/dev/null)
+
+              # Build file list: firmware + manuals combined
+              allfiles=("$file" "${manuals[@]}")
+
+              gh release create "$tag" "${allfiles[@]}" \
                 --title "${product} - Latest Firmware" \
                 --repo "${{ github.repository }}" \
                 --notes "Always points to the latest firmware for $product" \
