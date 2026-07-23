@@ -1,3 +1,4 @@
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-sv_firmware_v1_8_14/SV_firmware_v1_8_14.fdt
 https://github.com/gfisystem/downloads/releases/download/specular-tempus-spectempus_firmware_v3_8-build-46/SpecTempus_firmware_v3_8.Build.46.fdt
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-sv_firmware_v1_8_13/SV_firmware_v1_8_13.fdt
 https://github.com/gfisystem/downloads/releases/download/v1.8.12/SV_firmware_v1_8_12.fdt
@@ -127,6 +128,7 @@ https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/sol
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.MIDI.Implementation.Chart.-.rev.F.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.I.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.J.pdf
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.K.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/SolisVentus.Firmware.Update.history.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/sv-newest-firmware.fdt
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/SV.Firmware.v1.8.0.Release.Note.pdf
