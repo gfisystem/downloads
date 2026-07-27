@@ -13,6 +13,8 @@ on:
       - 'specular-tempus-firmwares/**'
       - 'editors/**'
       - 'manuals/**'
+      - '*.zip'
+      - '*.exe'
   workflow_dispatch:
 
 jobs:
@@ -53,11 +55,7 @@ jobs:
           echo "── Root drivers ──"
           mapfile -d '' rootfiles < <(find . -maxdepth 1 -type f \( -name "*.zip" -o -name "*.exe" \) -print0)
           if [ ${#rootfiles[@]} -gt 0 ]; then
-            gh release create "drivers-and-tools" "${rootfiles[@]}" \
-              --title "Drivers & Tools" \
-              --repo "${{ github.repository }}" \
-              --notes "USB drivers and general tools" \
-              2>&1 || echo "⚠ Skipped drivers-and-tools"
+            upload_to_release "drivers-and-tools" "Drivers & Tools" "USB drivers and general tools" "${rootfiles[@]}"
           fi
 
           # ── FIRMWARES ─────────────────────────────────────────────
@@ -82,11 +80,7 @@ jobs:
               tag="${product}-${slug}"
 
               echo "  → $tag"
-              gh release create "$tag" "$file" \
-                --title "$filename" \
-                --repo "${{ github.repository }}" \
-                --notes "Firmware release for $product" \
-                2>&1 || echo "  ⚠ Skipped $tag"
+              upload_to_release "$tag" "$filename" "Firmware release for $product" "$file"
 
             done < <(find "$folder" -maxdepth 1 -name "*.fdt" -print0)
 
@@ -119,13 +113,9 @@ jobs:
 
           # Synesthesia patch bundle (zips, not fdts — needs its own release)
           echo "  → synesthesia-patch-bundle"
-          mapfile -d '' bundlefiles < <(find "synesthesia-firmwares/firmware-software-patch-bundle" -maxdepth 1 -type f -print0 2>/dev/null)
+          mapfile -d '' bundlefiles < <(find "synesthesia-firmwares/firmware-software-patch-bundle" -maxdepth 1 -type f ! -name ".DS_Store" -print0 2>/dev/null)
           if [ ${#bundlefiles[@]} -gt 0 ]; then
-            gh release create "synesthesia-patch-bundle" "${bundlefiles[@]}" \
-              --title "Synesthesia Firmware + Software Patch Bundle" \
-              --repo "${{ github.repository }}" \
-              --notes "Combined firmware and software patch package for Synesthesia" \
-              2>&1 || echo "  ⚠ Skipped synesthesia-patch-bundle"
+            upload_to_release "synesthesia-patch-bundle" "Synesthesia Firmware + Software Patch Bundle" "Combined firmware and software patch package for Synesthesia" "${bundlefiles[@]}"
           fi
 
           # ── EDITORS ───────────────────────────────────────────────
@@ -155,20 +145,16 @@ jobs:
               slug=$(slugify "$version")
               tag="${product}-${slug}"
 
-              mapfile -d '' files < <(find "$versiondir" -maxdepth 1 -type f -print0)
+              mapfile -d '' files < <(find "$versiondir" -maxdepth 1 -type f ! -name ".DS_Store" -print0)
               [ ${#files[@]} -eq 0 ] && echo "  ⚠ Empty: $versiondir" && continue
 
               echo "  → $tag (${#files[@]} files)"
-              gh release create "$tag" "${files[@]}" \
-                --title "$version" \
-                --repo "${{ github.repository }}" \
-                --notes "Editor release: $version" \
-                2>&1 || echo "  ⚠ Skipped $tag"
+              upload_to_release "$tag" "$version" "Editor release: $version" "${files[@]}"
 
             done < <(find "$folder" -mindepth 1 -maxdepth 1 -type d -print0)
 
             # Loose files directly in editor root (sv-studio 1.0.0, duophony DFU loose files, symmlab READMEs)
-            mapfile -d '' loosefiles < <(find "$folder" -maxdepth 1 -type f -print0)
+            mapfile -d '' loosefiles < <(find "$folder" -maxdepth 1 -type f ! -name ".DS_Store" -print0)
             if [ ${#loosefiles[@]} -gt 0 ]; then
               tag="${product}-extras"
               echo "  → $tag (${#loosefiles[@]} loose files)"
@@ -177,18 +163,32 @@ jobs:
 
             # patch/ subfolder (symmlab) — treat as its own dated release
             if [ -d "$folder/patch" ]; then
-              mapfile -d '' patchfiles < <(find "$folder/patch" -maxdepth 1 -type f -print0)
+              mapfile -d '' patchfiles < <(find "$folder/patch" -maxdepth 1 -type f ! -name ".DS_Store" -print0)
               if [ ${#patchfiles[@]} -gt 0 ]; then
                 tag="${product}-patch"
                 echo "  → $tag"
-                gh release create "$tag" "${patchfiles[@]}" \
-                  --title "${product} - Patch" \
-                  --repo "${{ github.repository }}" \
-                  --notes "Patch files for $product" \
-                  2>&1 || echo "  ⚠ Skipped $tag"
+                upload_to_release "$tag" "${product} - Patch" "Patch files for $product" "${patchfiles[@]}"
               fi
             fi
 
           done
+
+          # ── MANUALS (per-product, standalone) ──────────────────────
+          # Every subfolder under manuals/ gets its own release, regardless
+          # of whether that product has a firmware/editor entry above.
+          # This is what actually publishes things like the cabzeus manual,
+          # which previously had no release at all to attach to.
+          echo "── Manuals ──"
+          while IFS= read -r -d '' manualdir; do
+            manualproduct=$(basename "$manualdir")
+
+            mapfile -d '' manualfiles < <(find "$manualdir" -maxdepth 1 -type f -name "*.pdf" -print0)
+            [ ${#manualfiles[@]} -eq 0 ] && continue
+
+            tag="${manualproduct}-manuals"
+            echo "  → $tag (${#manualfiles[@]} files)"
+            upload_to_release "$tag" "${manualproduct} - Manuals" "Manuals and documentation for $manualproduct" "${manualfiles[@]}"
+
+          done < <(find "manuals" -mindepth 1 -maxdepth 1 -type d -print0)
 
           echo "✅ Done"
