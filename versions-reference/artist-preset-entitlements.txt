@@ -1,0 +1,20 @@
+# Artist Presets Entitlement List
+#
+# Format:
+#   SERIAL|Display Name|file-slug|presetCount
+#
+#   SERIAL         – pedal serial number as read from the device (case-sensitive)
+#   Display Name   – artist name shown in the UI (no pipes `|`)
+#   file-slug      – filename stem: artist-bundle-<slug>.bkp
+#   presetCount    – number of presets in the bundle (for UI before download)
+#
+# Lines starting with '#' are comments. Empty lines are ignored.
+# Multiple lines with the same SERIAL allowed for multi-artist pedals.
+#
+# Example (replace with real data):
+# ABC123|Nels Cline|nels-cline|14
+# ABC123|Julian Lage|julian-lage|10
+# DEF456|Blake Mills|blake-mills|20
+
+# --- PLACEHOLDER ---
+SOLV-123456|Echo Wind|november-drops|10
