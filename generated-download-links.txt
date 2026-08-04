@@ -1,5 +1,6 @@
 https://github.com/gfisystem/downloads/releases/download/versions-reference/artist-preset-entitlements.txt
 https://github.com/gfisystem/downloads/releases/download/versions-reference/gfisystem-ver-ref.txt
+https://github.com/gfisystem/downloads/releases/download/artist-series-presets/artist-bundle-november-drops.bkp
 https://github.com/gfisystem/downloads/releases/download/artist-series-presets/Solis.Ventus.backup.on.22.July.2026.at.16.40.bkp
 https://github.com/gfisystem/downloads/releases/download/synesthesia-manuals/Synesthesia.-.Algorithms.v2x.x.pdf
 https://github.com/gfisystem/downloads/releases/download/synesthesia-manuals/Synesthesia.-.MIDI.Implementation.-.v2.4.x.pdf
