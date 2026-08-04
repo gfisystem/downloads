@@ -188,7 +188,7 @@ https://github.com/gfisystem/downloads/releases/download/duophony-duophony_firmw
 https://github.com/gfisystem/downloads/releases/download/duophony-dfu-extras/default.DS_Store
 https://github.com/gfisystem/downloads/releases/download/duophony-dfu-extras/macos-DFU-v1.0.1.pkg
 https://github.com/gfisystem/downloads/releases/download/duophony-dfu-extras/windows-DFU-v1.0.1.exe
-https://github.com/gfisystem/downloads/releases/download/drivers-and-tools/CDM-v2.12.36.4-for-ARM64.zipnieql
+https://github.com/gfisystem/downloads/releases/download/drivers-and-tools/CDM-v2.12.36.4-for-ARM64.zip
 https://github.com/gfisystem/downloads/releases/download/drivers-and-tools/CDM2123620_SpecLab_Win11_Driver.zip
 https://github.com/gfisystem/downloads/releases/download/cabzeus-cabzeus_firmware_v2_2/Cabzeus_firmware_v2_2.fdt
 https://github.com/gfisystem/downloads/releases/download/cabslab-extras/default.DS_Store
