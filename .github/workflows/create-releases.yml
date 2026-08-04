@@ -13,6 +13,8 @@ on:
       - 'specular-tempus-firmwares/**'
       - 'editors/**'
       - 'manuals/**'
+      - 'artist-series-presets/**'
+      - 'versions-reference/**'
       - '*.zip'
       - '*.exe'
   workflow_dispatch:
@@ -190,5 +192,19 @@ jobs:
             upload_to_release "$tag" "${manualproduct} - Manuals" "Manuals and documentation for $manualproduct" "${manualfiles[@]}"
 
           done < <(find "manuals" -mindepth 1 -maxdepth 1 -type d -print0)
+
+          # ── ARTIST SERIES PRESETS ────────────────────────────────────
+          echo "── Artist series presets ──"
+          mapfile -d '' presetfiles < <(find "artist-series-presets" -maxdepth 1 -type f ! -name ".DS_Store" -print0 2>/dev/null)
+          if [ ${#presetfiles[@]} -gt 0 ]; then
+            upload_to_release "artist-series-presets" "Artist Series Presets" "Artist series preset bundles" "${presetfiles[@]}"
+          fi
+
+          # ── VERSIONS REFERENCE ───────────────────────────────────────
+          echo "── Versions reference ──"
+          mapfile -d '' verreffiles < <(find "versions-reference" -maxdepth 1 -type f ! -name ".DS_Store" -print0 2>/dev/null)
+          if [ ${#verreffiles[@]} -gt 0 ]; then
+            upload_to_release "versions-reference" "Versions Reference" "Version and entitlement reference data" "${verreffiles[@]}"
+          fi
 
           echo "✅ Done"
