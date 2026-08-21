@@ -1,3 +1,8 @@
+https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_3/Enieqma_firmware_v1_2_3.fdt
+https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.1/EnieqLab.1.2.1.Installer.exe
+https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.1/macos-enieqlab-1.2.1-installer.pkg
+https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.1/macos-enieqlab-1.2.1-installer.pkg.pkg
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-sv_firmware_v1_8_15/SV_firmware_v1_8_15.fdt
 https://github.com/gfisystem/downloads/releases/download/versions-reference/artist-preset-entitlements.txt
 https://github.com/gfisystem/downloads/releases/download/versions-reference/gfisystem-ver-ref.txt
 https://github.com/gfisystem/downloads/releases/download/artist-series-presets/artist-bundle-november-drops.bkp
@@ -27,6 +32,7 @@ https://github.com/gfisystem/downloads/releases/download/orca-manuals/orca-manua
 https://github.com/gfisystem/downloads/releases/download/jonassus-manuals/jonassus-drive-user-manual-en.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-manuals/enieqma-midi-implementation.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-manuals/enieqma-user-manual.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-manuals/Enieqma.-.User.Manual.-.rev.D.pdf
 https://github.com/gfisystem/downloads/releases/download/duophony-manuals/duophony-user-manual-rev-d.pdf
 https://github.com/gfisystem/downloads/releases/download/cabzeus-mono-manuals/cabzeus-mono-quickstart-guide.pdf
 https://github.com/gfisystem/downloads/releases/download/cabzeus-manuals/cabzeus-user-manual-en-v.2.0.x.pdf
@@ -166,6 +172,7 @@ https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/sv-
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/SV.Firmware.v1.8.0.Release.Note.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-newest/enieqma-midi-implementation.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-newest/enieqma-user-manual.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-newest/Enieqma.-.User.Manual.-.rev.D.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-newest/Enieqma.Firmware.Update.history.pdf
 https://github.com/gfisystem/downloads/releases/download/enieqma-newest/newest-firmware.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_2/Enieqma_firmware_v1_2_2.fdt
