@@ -53,6 +53,46 @@ jobs:
               2>&1 || echo "⚠ Skipped $tag"
           }
 
+          # ── HELPER: replace a floating release's contents with exactly
+          # these files. Uploads/creates first; only prunes remote assets
+          # that are no longer wanted AFTER that succeeds, so a failed
+          # upload/create (e.g. a transient GitHub API error) leaves the
+          # previous release state intact instead of deleting it outright.
+          replace_release() {
+            local tag="$1"
+            local title="$2"
+            local notes="$3"
+            shift 3
+            local files=("$@")
+
+            if ! gh release upload "$tag" "${files[@]}" --repo "${{ github.repository }}" --clobber 2>/dev/null; then
+              if ! gh release create "$tag" "${files[@]}" \
+                  --title "$title" --repo "${{ github.repository }}" --notes "$notes" 2>&1; then
+                echo "  ⚠ Skipped $tag (upload/create failed — previous release left untouched)"
+                return 1
+              fi
+            fi
+
+            local wantnames=()
+            local f
+            for f in "${files[@]}"; do wantnames+=("$(basename "$f")"); done
+
+            local livenames=()
+            mapfile -t livenames < <(gh release view "$tag" --repo "${{ github.repository }}" --json assets --jq '.assets[].name' 2>/dev/null)
+
+            local name keep w
+            for name in "${livenames[@]}"; do
+              keep=0
+              for w in "${wantnames[@]}"; do
+                [ "$name" = "$w" ] && keep=1 && break
+              done
+              if [ "$keep" -eq 0 ]; then
+                echo "  → pruning stale asset from $tag: $name"
+                gh release delete-asset "$tag" "$name" --repo "${{ github.repository }}" --yes 2>/dev/null || true
+              fi
+            done
+          }
+
           # ── ROOT LEVEL DRIVERS ────────────────────────────────────
           echo "── Root drivers ──"
           mapfile -d '' rootfiles < <(find . -maxdepth 1 -type f \( -name "*.zip" -o -name "*.exe" \) -print0)
@@ -86,13 +126,11 @@ jobs:
 
             done < <(find "$folder" -maxdepth 1 -name "*.fdt" -print0)
 
-            # newest/ — stable floating tag, delete-and-replace each run
+            # newest/ — stable floating tag, replaced in place each run
             # includes all manuals for this product if they exist
             while IFS= read -r -d '' file; do
               tag="${product}-newest"
               echo "  → $tag (floating)"
-              gh release delete "$tag" \
-                --repo "${{ github.repository }}" --yes 2>/dev/null || true
 
               # Collect manuals for this product
               mapfile -d '' manuals < <(find "manuals/${product}" -maxdepth 1 -type f -name "*.pdf" -print0 2>/dev/null)
@@ -103,11 +141,7 @@ jobs:
               # Build file list: firmware + manuals + history combined
               allfiles=("$file" "${manuals[@]}" "${history[@]}")
 
-              gh release create "$tag" "${allfiles[@]}" \
-                --title "${product} - Latest Firmware" \
-                --repo "${{ github.repository }}" \
-                --notes "Always points to the latest firmware for $product" \
-                2>&1 || echo "  ⚠ Skipped $tag"
+              replace_release "$tag" "${product} - Latest Firmware" "Always points to the latest firmware for $product" "${allfiles[@]}"
 
             done < <(find "$folder/newest" -maxdepth 1 -name "*.fdt" -print0 2>/dev/null)
 

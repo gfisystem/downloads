@@ -1,8 +1,10 @@
 # Handoff: `gfisystem/downloads` release pipeline
 
-**Written:** 2026-08-04
+**Written:** 2026-08-04. **Partially updated:** 2026-08-21 (§3.2, §3.4, §5, §7.5, §10 only — see that dated entry).
 **Repo:** `gfisystem/downloads` (GitHub, **public**, remote `https://github.com/gfisystem/downloads.git`, branch `main`)
 **Scope of this doc:** everything relevant to how download links / GitHub Releases get generated in this repo — what exists, what changed recently, what was deliberately left alone, and what's still open.
+
+**Staleness warning:** only the sections listed above were touched on 2026-08-21. Seventeen days of unrelated commits landed between the original write-up and that update (new firmware/editor versions, etc.) — the directory map (§2), file/tag counts (§8), and anything not in that list were **not** re-verified and may no longer be accurate. Re-derive from the repo/GitHub API rather than trusting those sections as current.
 
 Read this whole document before touching `.github/workflows/create-releases.yml` or running/triggering it. Several things in here look like bugs at first glance but are confirmed, intentional decisions the user made explicitly — see "Deliberate decisions" below before "fixing" anything.
 
@@ -110,6 +112,33 @@ upload_to_release() {
 
 **Critical behavior to understand:** `--clobber` **overwrites and adds** assets, it never **removes** assets that are no longer present in the source folder. If a file is renamed or deleted from the repo, the old asset stays attached to the release forever unless someone runs `gh release delete-asset` by hand. This is not hypothetical — it already happened today, see §7.3.
 
+**[Added 2026-08-21] `replace_release` — second helper, used only by the `-newest` floating releases (§3.4):**
+
+```bash
+replace_release() {
+  local tag="$1" title="$2" notes="$3"; shift 3
+  local files=("$@")
+
+  if ! gh release upload "$tag" "${files[@]}" --repo "${{ github.repository }}" --clobber 2>/dev/null; then
+    if ! gh release create "$tag" "${files[@]}" \
+        --title "$title" --repo "${{ github.repository }}" --notes "$notes" 2>&1; then
+      echo "  ⚠ Skipped $tag (upload/create failed — previous release left untouched)"
+      return 1
+    fi
+  fi
+
+  # prune remote assets not in the new file list
+  local wantnames=(); for f in "${files[@]}"; do wantnames+=("$(basename "$f")"); done
+  local livenames=(); mapfile -t livenames < <(gh release view "$tag" --repo "${{ github.repository }}" --json assets --jq '.assets[].name' 2>/dev/null)
+  for name in "${livenames[@]}"; do
+    keep=0; for w in "${wantnames[@]}"; do [ "$name" = "$w" ] && keep=1 && break; done
+    [ "$keep" -eq 0 ] && gh release delete-asset "$tag" "$name" --repo "${{ github.repository }}" --yes 2>/dev/null
+  done
+}
+```
+
+Replaces the old delete-then-create pattern for `-newest` releases (see §3.4, §7.5 for why). Order of operations matters here: it uploads/creates the new content **first**, and only prunes assets that are no longer wanted **after** that succeeds — so if the upload/create step fails (including a bare transient GitHub API error, which is exactly what happened in §7.5), the release is left exactly as it was instead of being deleted with nothing to replace it. The prune step is a name-diff against what's actually live (via `gh release view --json assets`), not a blanket delete — so it still cleans up genuinely stale/renamed assets, it just does so safely, after the fact. **As of 2026-08-21 this fix exists only in the working tree / this doc — it has not been committed** (see §9 rule 1 — this agent does not commit).
+
 ### 3.3 Root-level drivers → tag `drivers-and-tools`
 
 Any `*.zip` / `*.exe` sitting directly at repo root goes into one flat release, tag `drivers-and-tools`. Currently: `CDM-v2.12.36.4-for-ARM64.zip`, `CDM2123620_SpecLab_Win11_Driver.zip`.
@@ -129,7 +158,7 @@ declare -A FIRMWARE_MAP=(
 
 For each folder → product pair:
 - Every top-level `*.fdt` file gets its **own** release: tag = `<product>-<slugified-filename-without-extension>`. E.g. `SV_firmware_v1_8_14.fdt` → tag `solis-ventus-sv_firmware_v1_8_14`.
-- If a `<folder>/newest/*.fdt` exists: **floating tag** `<product>-newest`. The script `gh release delete`s that tag first (ignoring failure), then `gh release create`s it fresh bundling: the newest `.fdt` + every PDF in `manuals/<product>/` + every PDF in `<folder>/firmware-update-history/`. This is a delete-then-recreate, not clobber, so it's the one place stale assets genuinely get cleaned up.
+- If a `<folder>/newest/*.fdt` exists: **floating tag** `<product>-newest`, bundling the newest `.fdt` + every PDF in `manuals/<product>/` + every PDF in `<folder>/firmware-update-history/`. **[As of 2026-08-21]** this calls `replace_release` (§3.2): upload-then-prune, safe against a failed API call. **Before 2026-08-21** it did `gh release delete` then `gh release create` with no safety net — see §7.5 for the actual outage that caused the change.
 - Only `solis-ventus` and `enieqma` currently have a populated `newest/` folder, so only those two products have a `-newest` release. `duophony`, `cabzeus`, `synesthesia`, `specular-tempus` do not (deliberate gap, not fixed — see §7.1).
 
 Special case bolted onto the end of this section: `synesthesia-firmwares/firmware-software-patch-bundle/` (zips, not `.fdt`s) → its own flat release, tag `synesthesia-patch-bundle`.
@@ -209,8 +238,10 @@ Not part of CI — a local, manually-run script (`./generate-download-links.sh`,
 | 2026-08-04 12:45 | `7b62537` | `new files` — **this session's workflow edit**: added `artist-series-presets/**` + `versions-reference/**` to trigger paths, added the two new release blocks (§3.7, §3.8) |
 | 2026-08-04 13:04 | `bfff388` | `rename file` — preset file renamed to `artist-bundle-november-drops.bkp` (matches the `artist-bundle-<slug>.bkp` convention documented in the entitlements file), `generated-download-links.txt` regenerated |
 | 2026-08-04 14:36 | `bc2c261` | `add ecnrypted` [sic] — added `artist-series-presets/artist-bundle-november-drops.bkp.enc.bkp`, `generated-download-links.txt` regenerated again |
+| 2026-08-21 | run `32441023802` (`workflow_dispatch`, not a commit) | **`enieqma-newest` outage + fix — see §7.5 for full detail.** Root-caused a live 404 on the `enieqma-newest` release to a transient GitHub API `HTTP 500` hitting the old delete-then-create step on the prior push (`fbaa56c`, "add enieqma fw 1.2.4"). Fixed immediately by re-dispatching the workflow (this run) — confirmed restored via `gh api repos/gfisystem/downloads/releases/tags/enieqma-newest`, history PDF included again. |
+| 2026-08-21 | uncommitted | Structural fix for the same class of bug: added `replace_release` helper (§3.2), rewired the `-newest` block (§3.4) to use it instead of delete-then-create. **Sitting in the working tree, not committed** — see §9 rule 1. |
 
-Between `7b62537` and now, the workflow was actually **triggered for real** (either manual `workflow_dispatch` or a push that matched the new paths) — the live release URLs in §8 below are confirmed real, not hypothetical.
+Between `7b62537` and now, the workflow was actually **triggered for real** (either manual `workflow_dispatch` or a push that matched the new paths) — the live release URLs in §8 below are confirmed real as of 2026-08-04, not hypothetical (though likely stale by now — see the staleness warning at the top of this doc).
 
 ---
 
@@ -265,6 +296,21 @@ The third one is the **original, pre-rename filename** (spaces became dots via G
 
 This will keep happening for any future rename in a flat-bucket folder (`artist-series-presets`, `versions-reference`, `drivers-and-tools`, any `-extras`). It hasn't been raised with the user yet — flag it, don't silently delete the stale asset (deleting a release asset is a real public action, needs explicit confirmation, see §9).
 
+### 7.5 [RESOLVED 2026-08-21, partially] `enieqma-newest` went fully missing due to an unsafe delete-then-create step
+
+This one wasn't a deliberate decision — it's a real bug that caused a real outage, triggered by asking "why is the enieqma firmware update history not included in the release?". The honest answer turned out to be "the whole `enieqma-newest` release doesn't exist," not "one file is missing from it."
+
+**Root cause, confirmed via GitHub API + Actions run logs (not guessed):**
+- The `-newest` block (§3.4, pre-2026-08-21 version) did `gh release delete "$tag" --yes` **then** `gh release create "$tag" ...`, with the create's failure swallowed by `|| echo "⚠ Skipped $tag"`.
+- On 2026-08-19 (`6943bcd`), this succeeded fine — `enieqma-newest` was live with the history PDF, confirmed in that run's log.
+- On 2026-08-21 (`fbaa56c`, "add enieqma fw 1.2.4"), the delete succeeded but the recreate hit `HTTP 500` from GitHub's API (transient — confirmed `solis-ventus-newest`, same code path, was unaffected and stayed live as a control). The swallowed failure meant the Actions run still reported green ✅ with no visible error, while the release was left deleted. Confirmed 404 via `gh api repos/gfisystem/downloads/releases/tags/enieqma-newest`.
+
+**Fixed, in two parts, both approved by the user in-chat:**
+1. **Immediate:** re-ran the workflow via `gh workflow run create-releases.yml --ref main` (run `32441023802`), confirmed via the API that `enieqma-newest` is back with all 5 expected assets including `Enieqma.Firmware.Update.history.pdf`. This part is done and live — no further action needed.
+2. **Structural:** replaced the delete-then-create pattern with the new `replace_release` helper (§3.2) for **both** `solis-ventus-newest` and `enieqma-newest` (same shared code path in `FIRMWARE_MAP` loop, one edit covers both). **This part is written but not committed** — it's sitting in the working tree. Until the user commits and pushes it, the live workflow on GitHub still runs the old, unsafe delete-then-create version, and this exact outage could recur on the next transient API blip.
+
+**Not done, deliberately out of scope of what was asked:** the same `replace_release` upload-then-prune pattern would also fix the orphaned-asset issue in §7.3 (which affects the flat-bucket sections: `drivers-and-tools`, editor `-extras`, `artist-series-presets`, `versions-reference`) — but the user only approved hardening the `-newest` step specifically. Extending the pattern to those sections is a reasonable follow-up, not something to do unprompted — see §10.
+
 ### 7.4 `temporary-firmwares/` is not wired into the workflow at all
 
 `temporary-firmwares/temp-fw.fdt` exists on disk but: not in the trigger `paths:` list, not in `FIRMWARE_MAP`. Pushing to this folder does nothing — no release, no trigger. Unknown whether this is intentional (a staging area that's *supposed* to stay unpublished) or an oversight. Not touched this session because it was out of scope of what was asked. Worth a one-line question to the user if it comes up.
@@ -299,3 +345,5 @@ If you need the current ground truth again later, re-run `./generate-download-li
 - [ ] Should `artist-preset-entitlements.txt` also get an encrypted/gated treatment, or is only the preset *content* meant to be encrypted (leaving the entitlement map itself in the clear)?
 - [ ] Should the stale `Solis.Ventus.backup.on.22.July.2026.at.16.40.bkp` asset be deleted from the live `artist-series-presets` release? (And more broadly: should this workflow gain asset-pruning logic so renames don't leave orphans in *any* flat-bucket release going forward?)
 - [ ] Is `temporary-firmwares/` intentionally excluded from the workflow, or should it be wired in like the other firmware folders?
+- [ ] **[2026-08-21]** The `replace_release` structural fix (§7.5) is written but uncommitted — needs the user to commit + push before it's actually protecting anything. Until then the live workflow still runs the unsafe delete-then-create version for `-newest`.
+- [ ] **[2026-08-21]** Should the same `replace_release` upload-then-prune pattern be extended to the flat-bucket sections (`drivers-and-tools`, editor `-extras`, `artist-series-presets`, `versions-reference`) to fix the orphaned-asset issue in §7.3 the same way? Not done — only `-newest` was in scope of what was approved.
