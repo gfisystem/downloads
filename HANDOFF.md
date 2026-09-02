@@ -1,10 +1,12 @@
 # Handoff: `gfisystem/downloads` release pipeline
 
-**Written:** 2026-08-04. **Partially updated:** 2026-08-21 (§3.2, §3.4, §5, §7.5, §10 only — see that dated entry).
+**Written:** 2026-08-04. **Partially updated:** 2026-08-21 and 2026-09-02 (§3.2, §3.4, §5, §7.5, §10 only — see those dated entries).
 **Repo:** `gfisystem/downloads` (GitHub, **public**, remote `https://github.com/gfisystem/downloads.git`, branch `main`)
 **Scope of this doc:** everything relevant to how download links / GitHub Releases get generated in this repo — what exists, what changed recently, what was deliberately left alone, and what's still open.
 
-**Staleness warning:** only the sections listed above were touched on 2026-08-21. Seventeen days of unrelated commits landed between the original write-up and that update (new firmware/editor versions, etc.) — the directory map (§2), file/tag counts (§8), and anything not in that list were **not** re-verified and may no longer be accurate. Re-derive from the repo/GitHub API rather than trusting those sections as current.
+**Staleness warning:** only the sections listed above were touched on those dates. Commits land on `main` regularly (new firmware/editor versions, etc.) between updates to this doc — the directory map (§2), file/tag counts (§8), and anything not in the dated list were **not** re-verified at each pass and may no longer be accurate. Re-derive from the repo/GitHub API rather than trusting those sections as current.
+
+**[2026-09-02] If you take one thing from this doc: verify, don't trust, anything this doc or a prior agent says is "fixed."** §7.5 below is a real example of a fix that was confirmed working, then silently caused active data loss for 6+ days before anyone noticed — because nobody re-checked it against live GitHub state after the fact. Live-verify against `gh api` / `gh release view`, not against what a previous run's log or an agent's summary claimed.
 
 Read this whole document before touching `.github/workflows/create-releases.yml` or running/triggering it. Several things in here look like bugs at first glance but are confirmed, intentional decisions the user made explicitly — see "Deliberate decisions" below before "fixing" anything.
 
@@ -137,7 +139,19 @@ replace_release() {
 }
 ```
 
-Replaces the old delete-then-create pattern for `-newest` releases (see §3.4, §7.5 for why). Order of operations matters here: it uploads/creates the new content **first**, and only prunes assets that are no longer wanted **after** that succeeds — so if the upload/create step fails (including a bare transient GitHub API error, which is exactly what happened in §7.5), the release is left exactly as it was instead of being deleted with nothing to replace it. The prune step is a name-diff against what's actually live (via `gh release view --json assets`), not a blanket delete — so it still cleans up genuinely stale/renamed assets, it just does so safely, after the fact. **As of 2026-08-21 this fix exists only in the working tree / this doc — it has not been committed** (see §9 rule 1 — this agent does not commit).
+Replaces the old delete-then-create pattern for `-newest` releases (see §3.4, §7.5 for why). Order of operations matters here: it uploads/creates the new content **first**, and only prunes assets that are no longer wanted **after** that succeeds — so if the upload/create step fails (including a bare transient GitHub API error, which is exactly what happened in §7.5), the release is left exactly as it was instead of being deleted with nothing to replace it. The prune step is a name-diff against what's actually live (via `gh release view --json assets`), not a blanket delete — so it still cleans up genuinely stale/renamed assets, it just does so safely, after the fact.
+
+**[2026-09-02] `gh_asset_name` helper — required by `replace_release`, added after the first version of this helper caused real data loss (§7.5 part 2):**
+
+```bash
+gh_asset_name() {
+  printf '%s' "$1" | sed -E 's/[^A-Za-z0-9._ -]//g; s/ +/./g; s/^\.+//; s/\.+$//'
+}
+```
+
+Predicts the release-asset name GitHub will actually store for a given local filename: delete characters outside `[A-Za-z0-9._- ]` (strips parens, etc.), collapse whitespace runs to a single `.`, trim leading/trailing dots. Reverse-engineered from real examples and validated against every one of the ~195 files this workflow currently publishes, cross-checked against all ~212 live assets — zero unexplained mismatches. `replace_release` runs every local filename through this before comparing to the live asset list (`gh release view --json assets`), for both the completeness check and the prune check, so both sides are in the same name-space. **Do not compare a raw local basename directly against a live GitHub asset name — that was the exact bug in §7.5.**
+
+Current version of `replace_release` also verifies completeness after upload: it checks that every wanted file's predicted name actually appears live, and retries once (via `gh release upload --clobber`) for anything missing, logging a warning if the retry still doesn't stick. Only after that does it prune.
 
 ### 3.3 Root-level drivers → tag `drivers-and-tools`
 
@@ -239,7 +253,9 @@ Not part of CI — a local, manually-run script (`./generate-download-links.sh`,
 | 2026-08-04 13:04 | `bfff388` | `rename file` — preset file renamed to `artist-bundle-november-drops.bkp` (matches the `artist-bundle-<slug>.bkp` convention documented in the entitlements file), `generated-download-links.txt` regenerated |
 | 2026-08-04 14:36 | `bc2c261` | `add ecnrypted` [sic] — added `artist-series-presets/artist-bundle-november-drops.bkp.enc.bkp`, `generated-download-links.txt` regenerated again |
 | 2026-08-21 | run `32441023802` (`workflow_dispatch`, not a commit) | **`enieqma-newest` outage + fix — see §7.5 for full detail.** Root-caused a live 404 on the `enieqma-newest` release to a transient GitHub API `HTTP 500` hitting the old delete-then-create step on the prior push (`fbaa56c`, "add enieqma fw 1.2.4"). Fixed immediately by re-dispatching the workflow (this run) — confirmed restored via `gh api repos/gfisystem/downloads/releases/tags/enieqma-newest`, history PDF included again. |
-| 2026-08-21 | uncommitted | Structural fix for the same class of bug: added `replace_release` helper (§3.2), rewired the `-newest` block (§3.4) to use it instead of delete-then-create. **Sitting in the working tree, not committed** — see §9 rule 1. |
+| 2026-08-21 | landed in `0dd29b9` (unrelated message, "add sv 1.6.6 mac installer") | Structural fix for the same class of bug: added `replace_release` helper (§3.2), rewired the `-newest` block (§3.4) to use it instead of delete-then-create. Written as uncommitted at the time; the user committed it at some point before 2026-08-24 without a dedicated commit message. |
+| 2026-08-24 → 2026-08-27 | `61266ae`, `77c98f4`, `f51f3d2`, `2919b0c`, `be72b8b` (ordinary firmware/editor pushes) | Each push auto-triggered the workflow, and each run's `replace_release` call silently deleted the space-named assets from `enieqma-newest`/`solis-ventus-newest` — see §7.5 part 2. Nobody noticed until the user hit a 404 and asked. |
+| 2026-09-02 | uncommitted | Root-caused §7.5 part 2 (raw-vs-sanitized name comparison bug in `replace_release`'s own prune step), added `gh_asset_name` helper + completeness retry (§3.2). Audited all ~127 live tags vs source — confirmed only these two affected. Restored the 8 stripped files via `gh release upload --clobber` (user-approved). Code fix **sitting in the working tree, not committed** — see §9 rule 1. |
 
 Between `7b62537` and now, the workflow was actually **triggered for real** (either manual `workflow_dispatch` or a push that matched the new paths) — the live release URLs in §8 below are confirmed real as of 2026-08-04, not hypothetical (though likely stale by now — see the staleness warning at the top of this doc).
 
@@ -296,7 +312,9 @@ The third one is the **original, pre-rename filename** (spaces became dots via G
 
 This will keep happening for any future rename in a flat-bucket folder (`artist-series-presets`, `versions-reference`, `drivers-and-tools`, any `-extras`). It hasn't been raised with the user yet — flag it, don't silently delete the stale asset (deleting a release asset is a real public action, needs explicit confirmation, see §9).
 
-### 7.5 [RESOLVED 2026-08-21, partially] `enieqma-newest` went fully missing due to an unsafe delete-then-create step
+### 7.5 [RESOLVED — but see part 2] `enieqma-newest` / `solis-ventus-newest` data loss, two separate incidents
+
+**Part 1 — 2026-08-21, `enieqma-newest` went fully missing due to an unsafe delete-then-create step**
 
 This one wasn't a deliberate decision — it's a real bug that caused a real outage, triggered by asking "why is the enieqma firmware update history not included in the release?". The honest answer turned out to be "the whole `enieqma-newest` release doesn't exist," not "one file is missing from it."
 
@@ -310,6 +328,21 @@ This one wasn't a deliberate decision — it's a real bug that caused a real out
 2. **Structural:** replaced the delete-then-create pattern with the new `replace_release` helper (§3.2) for **both** `solis-ventus-newest` and `enieqma-newest` (same shared code path in `FIRMWARE_MAP` loop, one edit covers both). **This part is written but not committed** — it's sitting in the working tree. Until the user commits and pushes it, the live workflow on GitHub still runs the old, unsafe delete-then-create version, and this exact outage could recur on the next transient API blip.
 
 **Not done, deliberately out of scope of what was asked:** the same `replace_release` upload-then-prune pattern would also fix the orphaned-asset issue in §7.3 (which affects the flat-bucket sections: `drivers-and-tools`, editor `-extras`, `artist-series-presets`, `versions-reference`) — but the user only approved hardening the `-newest` step specifically. Extending the pattern to those sections is a reasonable follow-up, not something to do unprompted — see §10.
+
+**Part 2 — 2026-08-21 through 2026-09-02, `replace_release` itself silently deleted the same files it was supposed to protect**
+
+The user later committed the part-1 fix (exactly when is unclear — the commit it landed in, `0dd29b9`, has an unrelated message, "add sv 1.6.6 mac installer"). It then ran on every subsequent push (confirmed runs on 2026-08-24, -26, -27) and, on **every single run**, its prune step deleted every wanted asset whose original filename contained a space — because `wantnames` was built from raw local `basename` output while `livenames` came from `gh release view` (already GitHub-sanitized: spaces→dots, punctuation stripped). Raw `"Solis Ventus - User Manual - rev I.pdf"` never equals sanitized `"Solis.Ventus.-.User.Manual.-.rev.I.pdf"`, so the prune loop treated it as stale and ran `gh release delete-asset` on it. Confirmed directly in the 2026-08-27 run log:
+```
+→ pruning stale asset from solis-ventus-newest: SolisVentus.Firmware.Update.history.pdf
+→ pruning stale asset from enieqma-newest: Enieqma.Firmware.Update.history.pdf
+```
+This is how the user found it: they hit a 404 on `SolisVentus.Firmware.Update.history.pdf` days later and asked why. **The immediate trigger question ("why is this link 404") undersold the actual scope — the bug had been silently stripping the same ~8 files back out on every push for about 6 days before anyone noticed.**
+
+Investigation method (worth repeating for future audits — see §5 "how to re-audit"): rather than checking file-by-file, the release-discovery half of this very script was extracted, its `gh`-calling functions stubbed to record `(tag, wanted-filename)` pairs instead of executing, and run locally against the actual repo checkout — giving an authoritative "what should be live" list without guessing. That was diffed against a single paginated `gh api repos/gfisystem/downloads/releases` pull (all releases + assets in one read). Result: **only these two tags were affected** — the other ~120 live release tags matched their expected source files exactly (aside from already-known, harmless items: stray `default.DS_Store` assets from before `.gitignore` existed, the pre-rename `artist-series-presets` orphan from §7.3, and the two legacy pre-workflow `v1.8.11`/`v1.8.12` tags from §7.1).
+
+**Fixed 2026-09-02:** added the `gh_asset_name` helper (§3.2) so `replace_release` compares like-for-like instead of raw-vs-sanitized. Also added the completeness-check/retry that was separately approved after part 1 — `replace_release` now verifies every wanted asset actually landed and retries once if not, before ever pruning. Validated the new normalization function against all ~195 files this workflow publishes and all ~212 live assets, zero unexplained mismatches, before trusting it to drive a delete call. **This fix is, again, uncommitted** — same rule as always, this agent doesn't commit (§9 rule 1). The 8 files the bug had stripped out (2 on `enieqma-newest`, 6 on `solis-ventus-newest`) were restored directly via `gh release upload --clobber` after explicit user confirmation, and reverified live via `gh api`.
+
+**Lesson for next time, stated plainly:** a fix that adds a *delete* path needs to be validated against real, messy production filenames (spaces, punctuation) before it's trusted — not just syntax-checked and dry-run against discovery logic that never calls the destructive step. Neither part-1 nor part-2 of this incident would have been caught by `bash -n` or a local `find`-only dry run; both required checking actual live GitHub state.
 
 ### 7.4 `temporary-firmwares/` is not wired into the workflow at all
 
@@ -345,5 +378,6 @@ If you need the current ground truth again later, re-run `./generate-download-li
 - [ ] Should `artist-preset-entitlements.txt` also get an encrypted/gated treatment, or is only the preset *content* meant to be encrypted (leaving the entitlement map itself in the clear)?
 - [ ] Should the stale `Solis.Ventus.backup.on.22.July.2026.at.16.40.bkp` asset be deleted from the live `artist-series-presets` release? (And more broadly: should this workflow gain asset-pruning logic so renames don't leave orphans in *any* flat-bucket release going forward?)
 - [ ] Is `temporary-firmwares/` intentionally excluded from the workflow, or should it be wired in like the other firmware folders?
-- [ ] **[2026-08-21]** The `replace_release` structural fix (§7.5) is written but uncommitted — needs the user to commit + push before it's actually protecting anything. Until then the live workflow still runs the unsafe delete-then-create version for `-newest`.
-- [ ] **[2026-08-21]** Should the same `replace_release` upload-then-prune pattern be extended to the flat-bucket sections (`drivers-and-tools`, editor `-extras`, `artist-series-presets`, `versions-reference`) to fix the orphaned-asset issue in §7.3 the same way? Not done — only `-newest` was in scope of what was approved.
+- [ ] **[2026-09-02, supersedes the 2026-08-21 item]** The `gh_asset_name`-fixed `replace_release` (§3.2, §7.5 part 2) is written but uncommitted — needs the user to commit + push before it's actually protecting anything. Until then the live workflow still runs the **buggy** version that deletes space-named assets on every run. This is more urgent than a typical pending fix: leaving it uncommitted means the next push to `solis-ventus-firmwares/**`, `enieqma-firmwares/**`, `manuals/solis-ventus/**`, or `manuals/enieqma/**` will silently strip the same 8 files right back out again.
+- [ ] **[2026-08-21]** Should the same `replace_release` upload-then-prune pattern be extended to the flat-bucket sections (`drivers-and-tools`, editor `-extras`, `artist-series-presets`, `versions-reference`) to fix the orphaned-asset issue in §7.3 the same way? Not done — only `-newest` was in scope of what was approved. Given §7.5 part 2, extending this pattern elsewhere should come with the same real-filename validation this time, not just a syntax check.
+- [ ] **[2026-09-02]** Consider whether this workflow needs a lightweight live-state check (e.g. a periodic re-run of the audit method described in §7.5 part 2) rather than relying on someone noticing a 404 by hand — that's how part 2 went undetected for 6 days.

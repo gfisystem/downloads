@@ -35,6 +35,16 @@ jobs:
             echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -d '()' | tr -s '-'
           }
 
+          # ── HELPER: predict the release-asset name GitHub will store
+          # for a given local filename, so it can be compared against the
+          # live asset list without a false mismatch. Reverse-engineered
+          # from GitHub's actual behavior (validated against every asset
+          # currently in this repo): characters outside [A-Za-z0-9._- ]
+          # are deleted, then runs of spaces collapse to a single '.'.
+          gh_asset_name() {
+            printf '%s' "$1" | sed -E 's/[^A-Za-z0-9._ -]//g; s/ +/./g; s/^\.+//; s/\.+$//'
+          }
+
           # ── HELPER: create or upload to existing release ──────────
           upload_to_release() {
             local tag="$1"
@@ -73,14 +83,44 @@ jobs:
               fi
             fi
 
+            # Predicted GitHub-sanitized name for each local file — used
+            # for BOTH the completeness check and the prune check below,
+            # so they're always compared against the live list in the
+            # same name-space (see gh_asset_name comment: comparing raw
+            # local basenames directly against already-sanitized live
+            # names was the bug that made this helper delete every wanted
+            # asset whose filename had a space in it, every run).
             local wantnames=()
             local f
-            for f in "${files[@]}"; do wantnames+=("$(basename "$f")"); done
+            for f in "${files[@]}"; do wantnames+=("$(gh_asset_name "$(basename "$f")")"); done
 
             local livenames=()
             mapfile -t livenames < <(gh release view "$tag" --repo "${{ github.repository }}" --json assets --jq '.assets[].name' 2>/dev/null)
 
-            local name keep w
+            # Verify every wanted file actually landed — gh has, in
+            # practice, returned success while silently dropping some
+            # assets from a multi-file upload. Retry any that are missing,
+            # once.
+            local missing_files=()
+            local i name found w
+            for i in "${!files[@]}"; do
+              name="${wantnames[$i]}"
+              found=0
+              for w in "${livenames[@]}"; do
+                [ "$name" = "$w" ] && found=1 && break
+              done
+              [ "$found" -eq 0 ] && missing_files+=("${files[$i]}")
+            done
+
+            if [ ${#missing_files[@]} -gt 0 ]; then
+              echo "  ⚠ $tag missing ${#missing_files[@]} asset(s) after upload, retrying: ${missing_files[*]}"
+              gh release upload "$tag" "${missing_files[@]}" --repo "${{ github.repository }}" --clobber 2>/dev/null || \
+                echo "  ⚠ $tag retry failed — may still be missing: ${missing_files[*]}"
+              mapfile -t livenames < <(gh release view "$tag" --repo "${{ github.repository }}" --json assets --jq '.assets[].name' 2>/dev/null)
+            fi
+
+            # Prune remote assets that are no longer wanted.
+            local keep
             for name in "${livenames[@]}"; do
               keep=0
               for w in "${wantnames[@]}"; do
