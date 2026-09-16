@@ -1,3 +1,10 @@
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-sv_firmware_v1_8_17/SV_firmware_v1_8_17.fdt
+https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_5/Enieqma_firmware_v1_2_5.fdt
+https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.2/EnieqLab.1.2.2.Installer.exe
+https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.2/macos-enieqlab-1.2.2-installer.pkg
+https://github.com/gfisystem/downloads/releases/download/sv-studio-sv-studio-1.6.6/macOS.SV.Studio.1.6.6.pkg
+https://github.com/gfisystem/downloads/releases/download/sv-studio-sv-studio-1.6.6/Windows.SV.Studio.1.6.6.exe
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-sv_firmware_v1_8_16/SV_firmware_v1_8_16.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_4/Enieqma_firmware_v1_2_4.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_3/Enieqma_firmware_v1_2_3.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.1/EnieqLab.1.2.1.Installer.exe
@@ -26,6 +33,7 @@ https://github.com/gfisystem/downloads/releases/download/solis-ventus-manuals/So
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-manuals/Solis.Ventus.-.User.Manual.-.rev.I.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-manuals/Solis.Ventus.-.User.Manual.-.rev.J.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-manuals/Solis.Ventus.-.User.Manual.-.rev.K.pdf
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-manuals/Solis.Ventus.-.User.Manual.-.rev.M.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-manuals/SV.Firmware.v1.8.0.Release.Note.pdf
 https://github.com/gfisystem/downloads/releases/download/skylar-manuals/skylar-manual-en.pdf
 https://github.com/gfisystem/downloads/releases/download/rossie-manuals/rossie-manual-en.pdf
@@ -168,9 +176,15 @@ https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Sol
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.I.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.J.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.K.pdf
+https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/Solis.Ventus.-.User.Manual.-.rev.M.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/SolisVentus.Firmware.Update.history.pdf
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/sv-newest-firmware.fdt
 https://github.com/gfisystem/downloads/releases/download/solis-ventus-newest/SV.Firmware.v1.8.0.Release.Note.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-newest/enieqma-midi-implementation.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-newest/enieqma-user-manual.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-newest/Enieqma.-.User.Manual.-.rev.D.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-newest/Enieqma.Firmware.Update.history.pdf
+https://github.com/gfisystem/downloads/releases/download/enieqma-newest/newest-firmware.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_2/Enieqma_firmware_v1_2_2.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_1/Enieqma_firmware_v1_2_1.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_2_0/Enieqma_firmware_v1_2_0.fdt
@@ -178,6 +192,7 @@ https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmwar
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_0_5/Enieqma_firmware_v1_0_5.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqma-enieqma_firmware_v1_0_4/Enieqma_firmware_v1_0_4.fdt
 https://github.com/gfisystem/downloads/releases/download/enieqlab-extras/default.DS_Store
+https://github.com/gfisystem/downloads/releases/download/enieqlab-extras/macos-enieqlab-1.2.2-installer.pkg
 https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.0/EnieqLab.1.2.0.Installer.exe
 https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.2.0/macos-enieqlab-1.2.0-installer.pkg
 https://github.com/gfisystem/downloads/releases/download/enieqlab-enieqlab-1.1.0/default.DS_Store
