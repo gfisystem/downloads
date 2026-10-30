@@ -18,3 +18,4 @@
 
 # --- PLACEHOLDER ---
 SOLV-123456|Echo Wind|november-drops|10
+SOLV-900098|JM Gear|jmgear|5
